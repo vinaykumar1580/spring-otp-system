@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "GRADLE",
+    "buildCommand": "./gradlew bootJar"
+  },
+  "deploy": {
+    "startCommand": "java -jar build/libs/JMS-0.0.1-SNAPSHOT.jar"
+  }
+}
