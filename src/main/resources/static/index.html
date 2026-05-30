@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OTP Verification</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: Arial, sans-serif;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    label {
+      font-size: 13px;
+      color: #555;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.3s;
+      margin-bottom: 18px;
+    }
+
+    input:focus { border-color: #667eea; }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: opacity 0.2s;
+      margin-bottom: 12px;
+    }
+
+    button:hover   { opacity: 0.9; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .message {
+      text-align: center;
+      font-size: 14px;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .message.success { background: #e8f5e9; color: #2e7d32; }
+    .message.error   { background: #ffebee; color: #c62828; }
+
+    .otp-section { display: none; }
+
+    .divider {
+      text-align: center;
+      color: #ccc;
+      margin: 10px 0 18px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>🔐 OTP Verification</h2>
+  <p class="subtitle">Enter your email to receive a one-time password</p>
+
+  <div id="emailSection">
+    <label for="emailInput">Email Address</label>
+    <input type="email" id="emailInput" placeholder="you@example.com" />
+    <button id="sendBtn" onclick="sendOtp()">Send OTP</button>
+  </div>
+
+  <div class="divider" id="divider" style="display:none;">
+    — Enter OTP sent to your email —
+  </div>
+
+  <div class="otp-section" id="otpSection">
+    <label for="otpInput">Enter OTP</label>
+    <input type="text" id="otpInput" placeholder="e.g. 483920" maxlength="6" />
+    <button onclick="verifyOtp()">Verify OTP</button>
+  </div>
+
+  <div class="message" id="messageBox"></div>
+</div>
+
+<script>
+  function sendOtp() {
+    var email = document.getElementById("emailInput").value.trim();
+    var sendBtn = document.getElementById("sendBtn");
+
+    if (!email) {
+      showMessage("Please enter your email.", "error");
+      return;
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+
+    fetch("/api/otp/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.status === "success") {
+        showMessage("OTP sent! Check your inbox.", "success");
+        document.getElementById("otpSection").style.display = "block";
+        document.getElementById("divider").style.display = "block";
+        sendBtn.textContent = "Resend OTP";
+      } else {
+        showMessage(data.message, "error");
+        sendBtn.textContent = "Send OTP";
+      }
+      sendBtn.disabled = false;
+    })
+    .catch(function(err) {
+      showMessage("Something went wrong. Try again.", "error");
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send OTP";
+    });
+  }
+
+  function verifyOtp() {
+    var email = document.getElementById("emailInput").value.trim();
+    var otp   = document.getElementById("otpInput").value.trim();
+
+    if (!otp) {
+      showMessage("Please enter the OTP.", "error");
+      return;
+    }
+
+    fetch("/api/otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, otp: otp })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      showMessage(data.message, data.status === "success" ? "success" : "error");
+    })
+    .catch(function(err) {
+      showMessage("Something went wrong. Try again.", "error");
+    });
+  }
+
+  function showMessage(msg, type) {
+    var box = document.getElementById("messageBox");
+    box.textContent = msg;
+    box.className = "message " + type;
+    box.style.display = "block";
+  }
+</script>
+
+</body>
+</html>
